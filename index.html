@@ -43,8 +43,7 @@
       <p>Hello World Test - Search 5 sample sentences</p>
 
       <form id="searchForm">
-          <input type="text" id="query" class="search-box" placeholder="Enter search (e.g.,
-  horses, capital, drought)">
+          <input type="text" id="query" class="search-box" placeholder="Enter search (e.g., horses, capital, drought)">
           <button type="submit" class="search-btn">Search</button>
       </form>
 
@@ -78,8 +77,7 @@
                   }
 
                   if (!data || data.length === 0) {
-                      resultsDiv.innerHTML = '<p>No results found. Try: horses, capital, drought,
-   emperor</p>';
+                      resultsDiv.innerHTML = '<p>No results found. Try: horses, capital, drought, emperor</p>';
                       return;
                   }
 
@@ -90,8 +88,7 @@
                           <div class="result">
                               <div class="original">${sentence.original_text}</div>
                               <div class="translation">${sentence.translation}</div>
-                              <div class="meta">Chapter ${sentence.chapter} | Keywords:
-  ${sentence.keywords}</div>
+                              <div class="meta">Chapter ${sentence.chapter} | Keywords: ${sentence.keywords}</div>
                           </div>
                       `;
                   });
