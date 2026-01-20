@@ -1,9 +1,9 @@
- <!DOCTYPE html>
+  <!DOCTYPE html>
   <html lang="en">
   <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Liaoshi Hello World</title>
+      <title>Liaoshi Hello World - DEBUG</title>
       <style>
           body {
               font-family: Arial, sans-serif;
@@ -12,10 +12,9 @@
               padding: 20px;
           }
           .search-box {
-              width: 100%;
+              width: 70%;
               padding: 15px;
               font-size: 18px;
-              margin-bottom: 20px;
           }
           .search-btn {
               padding: 15px 30px;
@@ -34,23 +33,40 @@
           .original { color: #333; font-size: 18px; }
           .translation { color: #666; margin-top: 10px; }
           .meta { color: #999; font-size: 14px; margin-top: 10px; }
+          #debug {
+              background: #1a1a1a;
+              color: #00ff00;
+              padding: 15px;
+              margin-top: 20px;
+              font-family: monospace;
+              font-size: 12px;
+              white-space: pre-wrap;
+              max-height: 300px;
+              overflow-y: auto;
+          }
+          .debug-title {
+              color: #ff6600;
+              margin-top: 20px;
+          }
       </style>
       <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
-      <h1>Liaoshi Research Database</h1>
-      <p>Hello World Test - Search sample sentences</p>
+      <h1>Liaoshi Hello World - DEBUG MODE</h1>
+      <p>Search sample sentences (check debug log below)</p>
 
       <form id="searchForm">
-          <input type="text" id="query" class="search-box" placeholder="Enter search (e.g., horses, capital, Abaoji)">
+          <input type="text" id="query" class="search-box" placeholder="Enter search (e.g., horses, capital, Abaoji)" value="horses">
           <button type="submit" class="search-btn">Search</button>
       </form>
 
       <div id="results"></div>
 
+      <h3 class="debug-title">Debug Log:</h3>
+      <div id="debug">Waiting for search...</div>
+
       <script>
           // ============ CONFIGURATION ============
-          // Change these values to match your database
           const CONFIG = {
               supabaseUrl: 'https://skbmyruppgthmfytofvf.supabase.co',
               supabaseKey: 'sb_publishable_J8MCBOmLuznjVBatY4TRTw_pXF_1Oyv',
@@ -64,39 +80,108 @@
           };
           // ========================================
 
-          const supabase = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+          const debugDiv = document.getElementById('debug');
 
+          function log(message) {
+              const time = new Date().toLocaleTimeString();
+              debugDiv.innerHTML += `\n[${time}] ${message}`;
+              debugDiv.scrollTop = debugDiv.scrollHeight;
+              console.log(message);
+          }
+
+          log('Page loaded');
+          log('Config: ' + JSON.stringify(CONFIG, null, 2));
+
+          // Initialize Supabase
+          let supabase;
+          try {
+              supabase = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+              log('SUCCESS: Supabase client created');
+          } catch (err) {
+              log('ERROR creating Supabase client: ' + err.message);
+          }
+
+          // Test connection on page load
+          async function testConnection() {
+              log('Testing database connection...');
+              try {
+                  const { data, error, count } = await supabase
+                      .from(CONFIG.tableName)
+                      .select('*', { count: 'exact' })
+                      .limit(1);
+
+                  if (error) {
+                      log('CONNECTION ERROR: ' + JSON.stringify(error));
+                  } else {
+                      log('CONNECTION SUCCESS: Found table "' + CONFIG.tableName + '"');
+                      log('Sample row: ' + JSON.stringify(data));
+                  }
+              } catch (err) {
+                  log('CONNECTION EXCEPTION: ' + err.message);
+              }
+          }
+          testConnection();
+
+          // Search handler
           document.getElementById('searchForm').addEventListener('submit', async (e) => {
               e.preventDefault();
-              const query = document.getElementById('query').value;
-              const resultsDiv = document.getElementById('results');
+              log('--- SEARCH STARTED ---');
 
-              resultsDiv.innerHTML = 'Searching...';
+              const query = document.getElementById('query').value;
+              log('Search query: "' + query + '"');
+
+              const resultsDiv = document.getElementById('results');
+              resultsDiv.innerHTML = '<p>Searching...</p>';
+
+              if (!query || query.trim() === '') {
+                  log('ERROR: Empty query');
+                  resultsDiv.innerHTML = '<p>Please enter a search term</p>';
+                  return;
+              }
 
               try {
+                  log('Executing Supabase query...');
+                  log('Table: ' + CONFIG.tableName);
+                  log('Column: ' + CONFIG.columns.keywords);
+                  log('Filter: ilike %' + query + '%');
+
                   const { data, error } = await supabase
                       .from(CONFIG.tableName)
                       .select('*')
                       .ilike(CONFIG.columns.keywords, `%${query}%`);
 
+                  log('Query completed');
+                  log('Error: ' + JSON.stringify(error));
+                  log('Data: ' + JSON.stringify(data));
+
                   if (error) {
-                      resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
-                      console.error('Supabase error:', error);
+                      log('QUERY ERROR: ' + error.message);
+                      resultsDiv.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
                       return;
                   }
 
-                  if (!data || data.length === 0) {
-                      resultsDiv.innerHTML = '<p>No results found. Try: horses, capital, Abaoji, founding</p>';
+                  if (!data) {
+                      log('DATA IS NULL');
+                      resultsDiv.innerHTML = '<p>No data returned (null)</p>';
                       return;
                   }
 
-                  resultsDiv.innerHTML = `<p>Found ${data.length} result(s):</p>`;
+                  if (data.length === 0) {
+                      log('NO RESULTS: Empty array');
+                      resultsDiv.innerHTML = '<p>No results found. Try: horses, tribute, Abaoji, founding, capital</p>';
+                      return;
+                  }
 
-                  data.forEach(row => {
-                      const original = row[CONFIG.columns.originalText] || '';
-                      const translation = row[CONFIG.columns.translation] || '';
-                      const chapter = row[CONFIG.columns.chapter] || '';
-                      const keywords = row[CONFIG.columns.keywords] || '';
+                  log('SUCCESS: Found ' + data.length + ' results');
+                  resultsDiv.innerHTML = `<p><strong>Found ${data.length} result(s):</strong></p>`;
+
+                  data.forEach((row, index) => {
+                      log('Processing row ' + index + ': ' + JSON.stringify(row));
+
+                      const original = row[CONFIG.columns.originalText] || 'N/A';
+                      const translation = row[CONFIG.columns.translation] || 'N/A';
+                      const chapter = row[CONFIG.columns.chapter] || 'N/A';
+                      const keywords = row[CONFIG.columns.keywords] || 'N/A';
 
                       resultsDiv.innerHTML += `
                           <div class="result">
@@ -107,9 +192,12 @@
                       `;
                   });
 
+                  log('--- SEARCH COMPLETE ---');
+
               } catch (err) {
-                  resultsDiv.innerHTML = `<p>Error: ${err.message}</p>`;
-                  console.error('Catch error:', err);
+                  log('EXCEPTION: ' + err.message);
+                  log('Stack: ' + err.stack);
+                  resultsDiv.innerHTML = `<p style="color:red">Exception: ${err.message}</p>`;
               }
           });
       </script>
