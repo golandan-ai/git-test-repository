@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
   <html>
   <head>
-      <title>Basic Test v2</title>
+      <title>Basic Test v3</title>
   </head>
   <body>
-      <h1>Basic Test v2</h1>
+      <h1>Basic Test v3</h1>
       <pre id="output">Loading...</pre>
 
       <script>
@@ -14,21 +14,28 @@
           log('Step 1: JavaScript works');
       </script>
 
-      <!-- Try different CDN -->
       <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
       <script>
-          log('Step 2: After Supabase script tag');
+          log('Step 2: Script running');
 
-          if (typeof window.supabase !== 'undefined') {
-              log('Step 3: Supabase loaded OK!');
+          // Check what Supabase exposes
+          log('window.supabase = ' + typeof window.supabase);
+          log('window.Supabase = ' + typeof window.Supabase);
+          log('window.createClient = ' + typeof window.createClient);
 
-              var url = 'https://skbmyruppgthmfytofvf.supabase.co';
-              var key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN
-  rYm15cnVwcGd0aG1meXRvZnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MDc1MjMsImV4cCI6MjA4NDM4MzUyM30.nH
-  peBFlXBfLY3K2jbNN_UX5h9J3IbXk7BsFhxct4xo0';
+          // Try different ways to access it
+          var sb = window.supabase || window.Supabase;
 
-              var client = window.supabase.createClient(url, key);
+          if (sb && sb.createClient) {
+              log('Step 3: Found createClient');
+
+              var client = sb.createClient(
+                  'https://skbmyruppgthmfytofvf.supabase.co',
+                  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYm15c
+  nVwcGd0aG1meXRvZnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MDc1MjMsImV4cCI6MjA4NDM4MzUyM30.nHpeBFlX
+  BfLY3K2jbNN_UX5h9J3IbXk7BsFhxct4xo0'
+              );
               log('Step 4: Client created');
 
               client.from('test01').select('*').then(function(res) {
@@ -42,8 +49,10 @@
                   }
               });
           } else {
-              log('FAILED: Supabase did not load');
-              log('Check browser console (F12) for blocked scripts');
+              log('FAILED: No createClient found');
+              log('Available on window: ' + Object.keys(window).filter(function(k) {
+                  return k.toLowerCase().indexOf('supa') > -1;
+              }));
           }
       </script>
   </body>
