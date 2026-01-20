@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Backend Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f0f4f8;
+        }
+        h1 {
+            color: #2d5a87;
+        }
+        .test-box {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #2d5a87;
+        }
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            background: #2d5a87;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1a365d;
+        }
+        .result {
+            background: #1a1a2e;
+            color: #00ff88;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: 'Consolas', monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .info code {
+            background: #ddd;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Python Backend Test</h1>
+
+    <div class="info">
+        <strong>Purpose:</strong> Demonstrate that HTML can call a Python function on Vercel.<br>
+        <strong>API Endpoint:</strong> <code>/api/hello?text=your_text</code><br>
+        <strong>Python processes:</strong> reverse, uppercase, lowercase, char count, word count, etc.
+    </div>
+
+    <div class="test-box">
+        <h3>Enter text for Python to process:</h3>
+        <input type="text" id="inputText" placeholder="Type something here..." value="Liaoshi Research Database">
+        <br>
+        <button onclick="callPython()">Send to Python</button>
+        <button onclick="callPythonDefault()" style="background:#666;">Test Default</button>
+
+        <div id="status"></div>
+        <div id="result" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-box">
+        <h3>How it works:</h3>
+        <ol>
+            <li>HTML sends text to <code>/api/hello?text=...</code></li>
+            <li>Vercel routes request to <code>api/hello.py</code></li>
+            <li>Python processes the text (reverse, count, etc.)</li>
+            <li>Python returns JSON response</li>
+            <li>HTML displays the result</li>
+        </ol>
+        <p><strong>Future use:</strong> This same pattern can process Liaoshi data - clean input, translate, analyze, format output, etc.</p>
+    </div>
+
+    <script>
+        // Use relative path for deployed version, full URL for local testing
+        var API_URL = '/api/hello';
+
+        // Check if running locally (file://) and adjust URL
+        if (window.location.protocol === 'file:') {
+            API_URL = 'https://git-test-repository.vercel.app/api/hello';
+        }
+
+        async function callPython() {
+            var text = document.getElementById('inputText').value;
+            var statusDiv = document.getElementById('status');
+            var resultDiv = document.getElementById('result');
+
+            statusDiv.innerHTML = '<div class="status" style="background:#fff3cd;color:#856404;">Calling Python...</div>';
+            resultDiv.style.display = 'none';
+
+            try {
+                var response = await fetch(API_URL + '?text=' + encodeURIComponent(text));
+                var data = await response.json();
+
+                statusDiv.innerHTML = '<div class="status success">SUCCESS - Python responded!</div>';
+                resultDiv.style.display = 'block';
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="status error">ERROR: ' + error.message + '</div>';
+                resultDiv.style.display = 'none';
+            }
+        }
+
+        async function callPythonDefault() {
+            document.getElementById('inputText').value = '';
+            var statusDiv = document.getElementById('status');
+            var resultDiv = document.getElementById('result');
+
+            statusDiv.innerHTML = '<div class="status" style="background:#fff3cd;color:#856404;">Calling Python with no input...</div>';
+
+            try {
+                var response = await fetch(API_URL);
+                var data = await response.json();
+
+                statusDiv.innerHTML = '<div class="status success">SUCCESS - Default response received!</div>';
+                resultDiv.style.display = 'block';
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="status error">ERROR: ' + error.message + '</div>';
+            }
+        }
+    </script>
+</body>
+</html>
