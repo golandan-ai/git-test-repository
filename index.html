@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+  <html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Liaoshi Hello World</title>
+      <style>
+          body {
+              font-family: Arial, sans-serif;
+              max-width: 800px;
+              margin: 50px auto;
+              padding: 20px;
+          }
+          .search-box {
+              width: 100%;
+              padding: 15px;
+              font-size: 18px;
+              margin-bottom: 20px;
+          }
+          .search-btn {
+              padding: 15px 30px;
+              font-size: 18px;
+              background: #0070f3;
+              color: white;
+              border: none;
+              cursor: pointer;
+          }
+          .result {
+              border: 1px solid #ddd;
+              padding: 15px;
+              margin: 10px 0;
+              border-radius: 5px;
+          }
+          .original { color: #333; font-size: 18px; }
+          .translation { color: #666; margin-top: 10px; }
+          .meta { color: #999; font-size: 14px; margin-top: 10px; }
+      </style>
+  </head>
+  <body>
+      <h1>Liaoshi Research Database</h1>
+      <p>Hello World Test - Search 5 sample sentences</p>
+
+      <form id="searchForm">
+          <input type="text" id="query" class="search-box" placeholder="Enter search (e.g., horses, capital, drought)">
+          <button type="submit" class="search-btn">Search</button>
+      </form>
+
+      <div id="results"></div>
+
+      <script>
+          const SUPABASE_URL = 'https://skbmyruppgthmfytofvf.supabase.co';
+          const SUPABASE_KEY = 'sb_publishable_J8MCBOmLuznjVBatY4TRTw_pXF_1Oyv';
+
+          document.getElementById('searchForm').addEventListener('submit', async (e) => {
+              e.preventDefault();
+              const query = document.getElementById('query').value;
+              const resultsDiv = document.getElementById('results');
+
+              resultsDiv.innerHTML = 'Searching...';
+
+              try {
+                  const response = await fetch(
+                      `${SUPABASE_URL}/rest/v1/sentences?keywords=ilike.*${query}*`,
+                      {
+                          headers: {
+                              'apikey': SUPABASE_KEY,
+                              'Authorization': `Bearer ${SUPABASE_KEY}`
+                          }
+                      }
+                  );
+
+                  const data = await response.json();
+
+                  if (data.length === 0) {
+                      resultsDiv.innerHTML = '<p>No results found. Try: horses, capital, drought, emperor</p>';
+                      return;
+                  }
+
+                  resultsDiv.innerHTML = `<p>Found ${data.length} result(s):</p>`;
+
+                  data.forEach(sentence => {
+                      resultsDiv.innerHTML += `
+                          <div class="result">
+                              <div class="original">${sentence.original_text}</div>
+                              <div class="translation">${sentence.translation}</div>
+                              <div class="meta">Chapter ${sentence.chapter} | Keywords: ${sentence.keywords}</div>
+                          </div>
+                      `;
+                  });
+
+              } catch (error) {
+                  resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+              }
+          });
+      </script>
+  </body>
+  </html>
