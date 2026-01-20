@@ -1,258 +1,29 @@
-  <!DOCTYPE html>
+    <!DOCTYPE html>
   <html lang="en">
   <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Liaoshi Hello World - DEBUG</title>
+      <title>Liaoshi Hello World</title>
       <style>
-          body {
-              font-family: Arial, sans-serif;
-              max-width: 800px;
-              margin: 50px auto;
-              padding: 20px;
-          }
-          .search-box {
-              width: 70%;
-              padding: 15px;
-              font-size: 18px;
-          }
-          .search-btn {
-              padding: 15px 30px;
-              font-size: 18px;
-              background: #0070f3;
-              color: white;
-              border: none;
-              cursor: pointer;
-          }
-          .result {
-              border: 1px solid #ddd;
-              padding: 15px;
-              margin: 10px 0;
-              border-radius: 5px;
-          }
-          .original { color: #333; font-size: 18px; }
-          .translation { color: #666; margin-top: 10px; }
-          .meta { color: #999; font-size: 14px; margin-top: 10px; }
-          #debug {
-              background: #1a1a1a;
-              color: #00ff00;
-              padding: 15px;
-              margin-top: 20px;
-              font-family: monospace;
-              font-size: 12px;
-              white-space: pre-wrap;
-              max-height: 300px;
-              overflow-y: auto;
-          }
-          .debug-title {
-              color: #ff6600;
-              margin-top: 20px;
-          }
-      </style>
-      <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  </head>
-  <body>
-      <h1>Liaoshi Hello World - DEBUG MODE</h1>
-      <p>Search sample sentences (check debug log below)</p>
-
-      <form id="searchForm">
-          <input type="text" id="query" class="search-box" placeholder="Enter search (e.g., horses, capital, Abaoji)" value="horses">
-          <button type="submit" class="search-btn">Search</button>
-      </form>
-
-      <div id="results"></div>
-
-      <h3 class="debug-title">Debug Log:</h3>
-      <div id="debug">Waiting for search...</div>
-
-      <script>
-          // ============ CONFIGURATION ============
-          const CONFIG = {
-              supabaseUrl: 'https://skbmyruppgthmfytofvf.supabase.co',
-              supabaseKey: 'sb_publishable_J8MCBOmLuznjVBatY4TRTw_pXF_1Oyv',
-              tableName: 'test01',
-              columns: {
-                  originalText: 'chinese_verse',
-                  translation: 'translated',
-                  chapter: 'chapter_n',
-                  keywords: 'key_words'
-              }
-          };
-          // ========================================
-
-          const debugDiv = document.getElementById('debug');
-
-          function log(message) {
-              const time = new Date().toLocaleTimeString();
-              debugDiv.innerHTML += `\n[${time}] ${message}`;
-              debugDiv.scrollTop = debugDiv.scrollHeight;
-              console.log(message);
-          }
-
-          log('Page loaded');
-          log('Config: ' + JSON.stringify(CONFIG, null, 2));
-
-          // Initialize Supabase
-          let supabase;
-          try {
-              supabase = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
-              log('SUCCESS: Supabase client created');
-          } catch (err) {
-              log('ERROR creating Supabase client: ' + err.message);
-          }
-
-          // Test connection on page load
-          async function testConnection() {
-              log('Testing database connection...');
-              try {
-                  const { data, error, count } = await supabase
-                      .from(CONFIG.tableName)
-                      .select('*', { count: 'exact' })
-                      .limit(1);
-
-                  if (error) {
-                      log('CONNECTION ERROR: ' + JSON.stringify(error));
-                  } else {
-                      log('CONNECTION SUCCESS: Found table "' + CONFIG.tableName + '"');
-                      log('Sample row: ' + JSON.stringify(data));
-                  }
-              } catch (err) {
-                  log('CONNECTION EXCEPTION: ' + err.message);
-              }
-          }
-          testConnection();
-
-          // Search handler
-          document.getElementById('searchForm').addEventListener('submit', async (e) => {
-              e.preventDefault();
-              log('--- SEARCH STARTED ---');
-
-              const query = document.getElementById('query').value;
-              log('Search query: "' + query + '"');
-
-              const resultsDiv = document.getElementById('results');
-              resultsDiv.innerHTML = '<p>Searching...</p>';
-
-              if (!query || query.trim() === '') {
-                  log('ERROR: Empty query');
-                  resultsDiv.innerHTML = '<p>Please enter a search term</p>';
-                  return;
-              }
-
-              try {
-                  log('Executing Supabase query...');
-                  log('Table: ' + CONFIG.tableName);
-                  log('Column: ' + CONFIG.columns.keywords);
-                  log('Filter: ilike %' + query + '%');
-
-                  const { data, error } = await supabase
-                      .from(CONFIG.tableName)
-                      .select('*')
-                      .ilike(CONFIG.columns.keywords, `%${query}%`);
-
-                  log('Query completed');
-                  log('Error: ' + JSON.stringify(error));
-                  log('Data: ' + JSON.stringify(data));
-
-                  if (error) {
-                      log('QUERY ERROR: ' + error.message);
-                      resultsDiv.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
-                      return;
-                  }
-
-                  if (!data) {
-                      log('DATA IS NULL');
-                      resultsDiv.innerHTML = '<p>No data returned (null)</p>';
-                      return;
-                  }
-
-                  if (data.length === 0) {
-                      log('NO RESULTS: Empty array');
-                      resultsDiv.innerHTML = '<p>No results found. Try: horses, tribute, Abaoji, founding, capital</p>';
-                      return;
-                  }
-
-                  log('SUCCESS: Found ' + data.length + ' results');
-                  resultsDiv.innerHTML = `<p><strong>Found ${data.length} result(s):</strong></p>`;
-
-                  data.forEach((row, index) => {
-                      log('Processing row ' + index + ': ' + JSON.stringify(row));
-
-                      const original = row[CONFIG.columns.originalText] || 'N/A';
-                      const translation = row[CONFIG.columns.translation] || 'N/A';
-                      const chapter = row[CONFIG.columns.chapter] || 'N/A';
-                      const keywords = row[CONFIG.columns.keywords] || 'N/A';
-
-                      resultsDiv.innerHTML += `
-                          <div class="result">
-                              <div class="original">${original}</div>
-                              <div class="translation">${translation}</div>
-                              <div class="meta">Chapter ${chapter} | Keywords: ${keywords}</div>
-                          </div>
-                      `;
-                  });
-
-                  log('--- SEARCH COMPLETE ---');
-
-              } catch (err) {
-                  log('EXCEPTION: ' + err.message);
-                  log('Stack: ' + err.stack);
-                  resultsDiv.innerHTML = `<p style="color:red">Exception: ${err.message}</p>`;
-              }
-          });
-      </script>
-  </body>
-  </html>
-
-  What's new:
-  1. Debug panel - Shows all activity on screen (green text on black)
-  2. Connection test - Automatically tests database on page load
-  3. Step-by-step logging - Every action is logged
-  4. Default search value - Pre-filled with "horses" so you just click Search
-  5. Better error display - Shows errors in red
-
-  Update GitHub with this code, then:
-  1. Open your site
-  2. Wait for the debug log to show connection test results
-  3. Click Search
-  4. Screenshot the debug log and share it with me
-
-  This will tell us exactly where it's failing.
-
-> I added screenshot horses. Nothing happens
-
-● Search(pattern: "**/screen_shots_for_claude/*horses*")
-  ⎿  Found 1 file (ctrl+o to expand)
-
-● Read(screen_shots_for_claude\horses.jpg)
-  ⎿  Read image (31KB)
-
-● The debug log shows only "Waiting for search..." - this means the JavaScript isn't running at all. The Supabase library likely isn't loading.
-
-  Let me create a simpler test version:
-
-  <!DOCTYPE html>
-  <html lang="en">
-  <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Liaoshi Hello World - DEBUG v2</title>
-      <style>
-          body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+          body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding:
+  20px; }
           .search-box { width: 70%; padding: 15px; font-size: 18px; }
-          .search-btn { padding: 15px 30px; font-size: 18px; background: #0070f3; color: white; border: none; cursor: pointer; }
+          .search-btn { padding: 15px 30px; font-size: 18px; background: #0070f3; color: white;
+  border: none; cursor: pointer; }
           .result { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
           .original { color: #333; font-size: 18px; }
           .translation { color: #666; margin-top: 10px; }
           .meta { color: #999; font-size: 14px; margin-top: 10px; }
-          #debug { background: #1a1a1a; color: #00ff00; padding: 15px; margin-top: 20px; font-family: monospace; font-size: 12px; white-space: pre-wrap; min-height: 200px; }
+          #debug { background: #1a1a1a; color: #00ff00; padding: 15px; margin-top: 20px;
+  font-family: monospace; font-size: 12px; white-space: pre-wrap; min-height: 150px; }
       </style>
   </head>
   <body>
-      <h1>Liaoshi Hello World - DEBUG v2</h1>
+      <h1>Liaoshi Hello World</h1>
 
       <form id="searchForm">
-          <input type="text" id="query" class="search-box" placeholder="e.g., horses" value="horses">
+          <input type="text" id="query" class="search-box" placeholder="e.g., horses, capital,
+  Abaoji" value="horses">
           <button type="submit" class="search-btn">Search</button>
       </form>
 
@@ -262,107 +33,78 @@
       <div id="debug"></div>
 
       <script>
-          // Immediate debug logging
           var debugDiv = document.getElementById('debug');
           function log(msg) {
               debugDiv.innerHTML += msg + '\n';
-              console.log(msg);
           }
-
-          log('1. JavaScript is running');
+          log('Page loaded...');
       </script>
 
-      <!-- Load Supabase AFTER first script -->
       <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
       <script>
-          log('2. Checking Supabase library...');
-
-          if (typeof window.supabase === 'undefined') {
-              log('ERROR: Supabase library not loaded!');
-              log('Trying alternative method...');
-          } else {
-              log('3. Supabase library loaded OK');
-          }
-
-          // Configuration - using LEGACY key for testing
+          // Configuration
           var SUPABASE_URL = 'https://skbmyruppgthmfytofvf.supabase.co';
-          var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYm15cnVwcGd0aG1meXRvZnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc0NzY4NjYsImV4cCI6MjA1MzA1Mjg2Nn0.JhEv-y8TJzL_JCvP9M8kJBovYL8zzIYXH3kD-_bBpKk';
+          var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
+  nJlZiI6InNrYm15cnVwcGd0aG1meXRvZnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MDc1MjMsImV4cCI6MjA4NDM4
+  MzUyM30.nHpeBFlXBfLY3K2jbNN_UX5h9J3IbXk7BsFhxct4xo0';
 
-          log('4. Creating Supabase client...');
+          var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          log('Supabase client ready');
 
-          var supabaseClient = null;
-          try {
-              supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-              log('5. Supabase client created OK');
-          } catch(e) {
-              log('ERROR creating client: ' + e.message);
-          }
-
-          // Test connection immediately
-          async function testDB() {
-              log('6. Testing database connection...');
-              try {
-                  var result = await supabaseClient.from('test01').select('*').limit(1);
-                  log('7. DB Response: ' + JSON.stringify(result));
-                  if (result.error) {
-                      log('DB ERROR: ' + result.error.message);
-                  } else if (result.data) {
-                      log('SUCCESS! Found ' + result.data.length + ' row(s)');
-                      log('Data: ' + JSON.stringify(result.data));
-                  }
-              } catch(e) {
-                  log('DB EXCEPTION: ' + e.message);
+          // Test connection
+          async function testConnection() {
+              log('Testing connection...');
+              var result = await supabaseClient.from('test01').select('*').limit(1);
+              if (result.error) {
+                  log('ERROR: ' + result.error.message);
+              } else {
+                  log('Connected! Found ' + result.data.length + ' row(s)');
               }
           }
+          testConnection();
 
-          if (supabaseClient) {
-              testDB();
-          }
-
-          // Search form
+          // Search
           document.getElementById('searchForm').addEventListener('submit', async function(e) {
               e.preventDefault();
-              log('--- SEARCH CLICKED ---');
-
               var query = document.getElementById('query').value;
-              log('Query: ' + query);
-
               var resultsDiv = document.getElementById('results');
+
+              log('Searching: ' + query);
               resultsDiv.innerHTML = 'Searching...';
 
-              try {
-                  var result = await supabaseClient
-                      .from('test01')
-                      .select('*')
-                      .ilike('key_words', '%' + query + '%');
+              var result = await supabaseClient
+                  .from('test01')
+                  .select('*')
+                  .ilike('key_words', '%' + query + '%');
 
-                  log('Search result: ' + JSON.stringify(result));
-
-                  if (result.error) {
-                      resultsDiv.innerHTML = '<p style="color:red">Error: ' + result.error.message + '</p>';
-                      return;
-                  }
-
-                  if (!result.data || result.data.length === 0) {
-                      resultsDiv.innerHTML = '<p>No results found</p>';
-                      return;
-                  }
-
-                  resultsDiv.innerHTML = '<p>Found ' + result.data.length + ' result(s):</p>';
-
-                  result.data.forEach(function(row) {
-                      resultsDiv.innerHTML += '<div class="result">' +
-                          '<div class="original">' + (row.chinese_verse || '') + '</div>' +
-                          '<div class="translation">' + (row.translated || '') + '</div>' +
-                          '<div class="meta">Chapter ' + (row.chapter_n || '') + ' | Keywords: ' + (row.key_words || '') + '</div>' +
-                          '</div>';
-                  });
-
-              } catch(e) {
-                  log('Search error: ' + e.message);
-                  resultsDiv.innerHTML = '<p style="color:red">Error: ' + e.message + '</p>';
+              if (result.error) {
+                  log('Error: ' + result.error.message);
+                  resultsDiv.innerHTML = '<p style="color:red">Error: ' + result.error.message +
+  '</p>';
+                  return;
               }
+
+              if (!result.data || result.data.length === 0) {
+                  log('No results');
+                  resultsDiv.innerHTML = '<p>No results found. Try: horses, tribute, Abaoji,
+  capital</p>';
+                  return;
+              }
+
+              log('Found ' + result.data.length + ' results');
+              resultsDiv.innerHTML = '<p><strong>Found ' + result.data.length + '
+  result(s):</strong></p>';
+
+              result.data.forEach(function(row) {
+                  resultsDiv.innerHTML +=
+                      '<div class="result">' +
+                      '<div class="original">' + (row.chinese_verse || '') + '</div>' +
+                      '<div class="translation">' + (row.translated || '') + '</div>' +
+                      '<div class="meta">Chapter ' + (row.chapter_n || '') + ' | Keywords: ' +
+  (row.key_words || '') + '</div>' +
+                      '</div>';
+              });
           });
       </script>
   </body>
