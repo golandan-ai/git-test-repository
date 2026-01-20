@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
     // Configuration
     const SUPABASE_URL = 'https://skbmyruppgthmfytofvf.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYm15cnVwcGd0aG1meXRvZnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MDc1MjMsImV4cCI6MjA4NDM4MzUyM30.nHpeBFlXBfLY3K2jbNN_UX5h9J3IbXk7BsFhxct4xo0';
+    const SUPABASE_KEY = 'sb_publishable_J8MCBOmLuznjVBatY4TRTw_pXF_1Oyv';
     const TABLE_NAME = 'test01';
 
     try {
