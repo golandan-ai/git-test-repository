@@ -80,14 +80,16 @@
             color: #666;
             font-size: 14px;
         }
-        .examples span {
+        .examples a {
             background: #e8e8e8;
             padding: 3px 8px;
             border-radius: 4px;
             margin: 0 3px;
             cursor: pointer;
+            text-decoration: none;
+            color: #333;
         }
-        .examples span:hover {
+        .examples a:hover {
             background: #ddd;
         }
         #results {
@@ -148,6 +150,17 @@
             padding: 15px;
             border-radius: 8px;
         }
+        .chatbot-help {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #555;
+        }
+        .chatbot-help strong {
+            color: #2d5a87;
+        }
         footer {
             text-align: center;
             margin-top: 30px;
@@ -163,23 +176,26 @@
     </header>
 
     <div class="search-container">
-        <form id="searchForm">
-            <input type="text" id="query" class="search-box" placeholder="Enter search keywords (e.g., horses, tribute, emperor)">
+        <form id="searchForm" method="GET">
+            <input type="text" id="query" name="q" class="search-box" placeholder="Enter search keywords (e.g., horses, tribute, emperor)">
             <button type="submit" class="search-btn">Search</button>
-            <button type="button" class="show-all-btn" onclick="showAll()">Show All</button>
+            <a href="?all=true" class="show-all-btn" style="display:inline-block; text-align:center; text-decoration:none;">Show All</a>
         </form>
         <div class="examples">
             Try:
-            <span onclick="search('horses')">horses</span>
-            <span onclick="search('tribute')">tribute</span>
-            <span onclick="search('capital')">capital</span>
-            <span onclick="search('Abaoji')">Abaoji</span>
-            <span onclick="search('founding')">founding</span>
+            <a href="?q=horses">horses</a>
+            <a href="?q=tribute">tribute</a>
+            <a href="?q=capital">capital</a>
+            <a href="?q=Abaoji">Abaoji</a>
+            <a href="?q=founding">founding</a>
+        </div>
+        <div class="chatbot-help">
+            <strong>For AI Chatbots:</strong> Use URL parameters to search. Example: <code>?q=horses</code> or <code>?all=true</code>
         </div>
     </div>
 
     <div id="results">
-        <div class="status">Enter a search term or click "Show All" to see all records</div>
+        <div class="status">Loading...</div>
     </div>
 
     <footer>
@@ -197,36 +213,40 @@
         // Initialize Supabase
         var client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Search function
-        function search(query) {
-            document.getElementById('query').value = query;
-            performSearch(query);
-        }
-
-        // Show all records
-        function showAll() {
-            document.getElementById('query').value = '';
-            performSearch('');
+        // Get URL parameters
+        function getUrlParams() {
+            var params = {};
+            var search = window.location.search.substring(1);
+            if (search) {
+                search.split('&').forEach(function(part) {
+                    var pair = part.split('=');
+                    params[pair[0]] = decodeURIComponent(pair[1] || '');
+                });
+            }
+            return params;
         }
 
         // Perform the search
-        async function performSearch(query) {
+        async function performSearch(query, showAll) {
             var resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = '<div class="status">Searching...</div>';
 
             try {
                 var result;
-                if (query && query.trim() !== '') {
+                if (showAll || (!query && window.location.search.includes('all=true'))) {
+                    // Get all records
+                    result = await client
+                        .from(TABLE_NAME)
+                        .select('*');
+                } else if (query && query.trim() !== '') {
                     // Search by keywords
                     result = await client
                         .from(TABLE_NAME)
                         .select('*')
                         .ilike('key_words', '%' + query + '%');
                 } else {
-                    // Get all records
-                    result = await client
-                        .from(TABLE_NAME)
-                        .select('*');
+                    // No search - show instructions
+                    resultsDiv.innerHTML = '<div class="status">Enter a search term above, click a keyword link, or use <a href="?all=true">Show All</a></div>';
+                    return;
                 }
 
                 if (result.error) {
@@ -235,21 +255,22 @@
                 }
 
                 if (!result.data || result.data.length === 0) {
-                    resultsDiv.innerHTML = '<div class="status">No results found. Try different keywords.</div>';
+                    resultsDiv.innerHTML = '<div class="status">No results found for "' + query + '". Try different keywords.</div>';
                     return;
                 }
 
-                var html = '<div class="result-count">Found ' + result.data.length + ' record(s)</div>';
+                // Build HTML results (readable by chatbots)
+                var html = '<div class="result-count">Found ' + result.data.length + ' record(s)' + (query ? ' for "' + query + '"' : '') + '</div>';
 
-                result.data.forEach(function(row) {
-                    html += '<div class="result">';
+                result.data.forEach(function(row, index) {
+                    html += '<article class="result">';
                     html += '<div class="chinese">' + (row.chinese_verse || '') + '</div>';
                     html += '<div class="translation">' + (row.translated || '') + '</div>';
                     html += '<div class="meta">';
                     html += '<span>Chapter ' + (row.chapter_n || 'N/A') + '</span>';
                     html += '<span>Keywords: ' + (row.key_words || 'N/A') + '</span>';
                     html += '</div>';
-                    html += '</div>';
+                    html += '</article>';
                 });
 
                 resultsDiv.innerHTML = html;
@@ -259,16 +280,26 @@
             }
         }
 
+        // On page load - check URL parameters and auto-search
+        var params = getUrlParams();
+        var queryInput = document.getElementById('query');
+
+        if (params.q) {
+            queryInput.value = params.q;
+            performSearch(params.q, false);
+        } else if (params.all === 'true') {
+            performSearch('', true);
+        } else {
+            document.getElementById('results').innerHTML = '<div class="status">Enter a search term above, click a keyword link, or use <a href="?all=true">Show All</a></div>';
+        }
+
         // Form submit handler
         document.getElementById('searchForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            var query = document.getElementById('query').value;
-            performSearch(query);
-        });
-
-        // Click on example keywords
-        document.querySelectorAll('.examples span').forEach(function(span) {
-            span.style.cursor = 'pointer';
+            var query = queryInput.value;
+            if (query) {
+                window.location.href = '?q=' + encodeURIComponent(query);
+            }
         });
     </script>
 </body>
