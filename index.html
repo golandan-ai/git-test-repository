@@ -35,27 +35,36 @@
           .translation { color: #666; margin-top: 10px; }
           .meta { color: #999; font-size: 14px; margin-top: 10px; }
       </style>
-      <!-- Supabase Official Library -->
       <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
       <h1>Liaoshi Research Database</h1>
-      <p>Hello World Test - Search 5 sample sentences</p>
+      <p>Hello World Test - Search sample sentences</p>
 
       <form id="searchForm">
-          <input type="text" id="query" class="search-box" placeholder="Enter search (e.g., horses, capital, drought)">
+          <input type="text" id="query" class="search-box" placeholder="Enter search (e.g., horses, capital, Abaoji)">
           <button type="submit" class="search-btn">Search</button>
       </form>
 
       <div id="results"></div>
 
       <script>
-          // Using the NEW recommended Publishable key
-          const SUPABASE_URL = 'https://skbmyruppgthmfytofvf.supabase.co';
-          const SUPABASE_KEY = 'sb_publishable_J8MCBOmLuznjVBatY4TRTw_pXF_1Oyv';
+          // ============ CONFIGURATION ============
+          // Change these values to match your database
+          const CONFIG = {
+              supabaseUrl: 'https://skbmyruppgthmfytofvf.supabase.co',
+              supabaseKey: 'sb_publishable_J8MCBOmLuznjVBatY4TRTw_pXF_1Oyv',
+              tableName: 'test01',
+              columns: {
+                  originalText: 'chinese_verse',
+                  translation: 'translated',
+                  chapter: 'chapter_n',
+                  keywords: 'key_words'
+              }
+          };
+          // ========================================
 
-          // Initialize Supabase client (the modern way)
-          const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+          const supabase = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
 
           document.getElementById('searchForm').addEventListener('submit', async (e) => {
               e.preventDefault();
@@ -65,36 +74,42 @@
               resultsDiv.innerHTML = 'Searching...';
 
               try {
-                  // Use Supabase client library for queries
                   const { data, error } = await supabase
-                      .from('sentences')
+                      .from(CONFIG.tableName)
                       .select('*')
-                      .ilike('keywords', `%${query}%`);
+                      .ilike(CONFIG.columns.keywords, `%${query}%`);
 
                   if (error) {
                       resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+                      console.error('Supabase error:', error);
                       return;
                   }
 
                   if (!data || data.length === 0) {
-                      resultsDiv.innerHTML = '<p>No results found. Try: horses, capital, drought, emperor</p>';
+                      resultsDiv.innerHTML = '<p>No results found. Try: horses, capital, Abaoji, founding</p>';
                       return;
                   }
 
                   resultsDiv.innerHTML = `<p>Found ${data.length} result(s):</p>`;
 
-                  data.forEach(sentence => {
+                  data.forEach(row => {
+                      const original = row[CONFIG.columns.originalText] || '';
+                      const translation = row[CONFIG.columns.translation] || '';
+                      const chapter = row[CONFIG.columns.chapter] || '';
+                      const keywords = row[CONFIG.columns.keywords] || '';
+
                       resultsDiv.innerHTML += `
                           <div class="result">
-                              <div class="original">${sentence.original_text}</div>
-                              <div class="translation">${sentence.translation}</div>
-                              <div class="meta">Chapter ${sentence.chapter} | Keywords: ${sentence.keywords}</div>
+                              <div class="original">${original}</div>
+                              <div class="translation">${translation}</div>
+                              <div class="meta">Chapter ${chapter} | Keywords: ${keywords}</div>
                           </div>
                       `;
                   });
 
               } catch (err) {
                   resultsDiv.innerHTML = `<p>Error: ${err.message}</p>`;
+                  console.error('Catch error:', err);
               }
           });
       </script>
