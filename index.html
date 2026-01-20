@@ -1,46 +1,275 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Liaoshi Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liaoshi Research Database</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        header {
+            background: linear-gradient(135deg, #1a365d 0%, #2d5a87 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }
+        header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        .search-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .search-box {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: #2d5a87;
+        }
+        .search-btn {
+            padding: 15px 40px;
+            font-size: 16px;
+            background: #2d5a87;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .search-btn:hover {
+            background: #1a365d;
+        }
+        .show-all-btn {
+            padding: 15px 30px;
+            font-size: 16px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .show-all-btn:hover {
+            background: #444;
+        }
+        .examples {
+            margin-top: 15px;
+            color: #666;
+            font-size: 14px;
+        }
+        .examples span {
+            background: #e8e8e8;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin: 0 3px;
+            cursor: pointer;
+        }
+        .examples span:hover {
+            background: #ddd;
+        }
+        #results {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .result-count {
+            color: #666;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .result {
+            padding: 20px;
+            margin: 15px 0;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .result:hover {
+            border-color: #2d5a87;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .chinese {
+            font-size: 22px;
+            color: #1a365d;
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        .translation {
+            font-size: 16px;
+            color: #444;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        .meta {
+            font-size: 13px;
+            color: #888;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .meta span {
+            background: #f0f0f0;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+        .status {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            color: #c0392b;
+            background: #fdeaea;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #888;
+            font-size: 13px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Liaoshi Test</h1>
-    <pre id="output">Starting...</pre>
+    <header>
+        <h1>Liaoshi Research Database</h1>
+        <p>Search historical records from the History of Liao (遼史)</p>
+    </header>
 
-    <script>
-        function log(msg) {
-            document.getElementById('output').innerHTML += '\n' + msg;
-        }
-        log('Step 1: JS works');
-    </script>
+    <div class="search-container">
+        <form id="searchForm">
+            <input type="text" id="query" class="search-box" placeholder="Enter search keywords (e.g., horses, tribute, emperor)">
+            <button type="submit" class="search-btn">Search</button>
+            <button type="button" class="show-all-btn" onclick="showAll()">Show All</button>
+        </form>
+        <div class="examples">
+            Try:
+            <span onclick="search('horses')">horses</span>
+            <span onclick="search('tribute')">tribute</span>
+            <span onclick="search('capital')">capital</span>
+            <span onclick="search('Abaoji')">Abaoji</span>
+            <span onclick="search('founding')">founding</span>
+        </div>
+    </div>
+
+    <div id="results">
+        <div class="status">Enter a search term or click "Show All" to see all records</div>
+    </div>
+
+    <footer>
+        Liaoshi Research Database | Powered by Supabase + Vercel
+    </footer>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
     <script>
-        log('Step 2: After supabase tag');
+        // Configuration
+        var SUPABASE_URL = "https://skbmyruppgthmfytofvf.supabase.co";
+        var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYm15cnVwcGd0aG1meXRvZnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MDc1MjMsImV4cCI6MjA4NDM4MzUyM30.nHpeBFlXBfLY3K2jbNN_UX5h9J3IbXk7BsFhxct4xo0";
+        var TABLE_NAME = "test01";
 
-        if (typeof supabase !== 'undefined') {
-            log('Step 3: supabase exists');
+        // Initialize Supabase
+        var client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-            var url = "https://skbmyruppgthmfytofvf.supabase.co";
-            var key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYm15cnVwcGd0aG1meXRvZnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MDc1MjMsImV4cCI6MjA4NDM4MzUyM30.nHpeBFlXBfLY3K2jbNN_UX5h9J3IbXk7BsFhxct4xo0";
-
-            var client = supabase.createClient(url, key);
-            log('Step 4: Client created');
-
-            client.from('test01').select('*').then(function(res) {
-                if (res.error) {
-                    log('Error: ' + res.error.message);
-                } else {
-                    log('SUCCESS! Found ' + res.data.length + ' rows:');
-                    res.data.forEach(function(row) {
-                        log('- ' + row.translated);
-                    });
-                }
-            });
-        } else {
-            log('FAILED: supabase not found');
+        // Search function
+        function search(query) {
+            document.getElementById('query').value = query;
+            performSearch(query);
         }
+
+        // Show all records
+        function showAll() {
+            document.getElementById('query').value = '';
+            performSearch('');
+        }
+
+        // Perform the search
+        async function performSearch(query) {
+            var resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="status">Searching...</div>';
+
+            try {
+                var result;
+                if (query && query.trim() !== '') {
+                    // Search by keywords
+                    result = await client
+                        .from(TABLE_NAME)
+                        .select('*')
+                        .ilike('key_words', '%' + query + '%');
+                } else {
+                    // Get all records
+                    result = await client
+                        .from(TABLE_NAME)
+                        .select('*');
+                }
+
+                if (result.error) {
+                    resultsDiv.innerHTML = '<div class="error">Error: ' + result.error.message + '</div>';
+                    return;
+                }
+
+                if (!result.data || result.data.length === 0) {
+                    resultsDiv.innerHTML = '<div class="status">No results found. Try different keywords.</div>';
+                    return;
+                }
+
+                var html = '<div class="result-count">Found ' + result.data.length + ' record(s)</div>';
+
+                result.data.forEach(function(row) {
+                    html += '<div class="result">';
+                    html += '<div class="chinese">' + (row.chinese_verse || '') + '</div>';
+                    html += '<div class="translation">' + (row.translated || '') + '</div>';
+                    html += '<div class="meta">';
+                    html += '<span>Chapter ' + (row.chapter_n || 'N/A') + '</span>';
+                    html += '<span>Keywords: ' + (row.key_words || 'N/A') + '</span>';
+                    html += '</div>';
+                    html += '</div>';
+                });
+
+                resultsDiv.innerHTML = html;
+
+            } catch (e) {
+                resultsDiv.innerHTML = '<div class="error">Error: ' + e.message + '</div>';
+            }
+        }
+
+        // Form submit handler
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var query = document.getElementById('query').value;
+            performSearch(query);
+        });
+
+        // Click on example keywords
+        document.querySelectorAll('.examples span').forEach(function(span) {
+            span.style.cursor = 'pointer';
+        });
     </script>
 </body>
 </html>
