@@ -203,3 +203,167 @@
       </script>
   </body>
   </html>
+
+  What's new:
+  1. Debug panel - Shows all activity on screen (green text on black)
+  2. Connection test - Automatically tests database on page load
+  3. Step-by-step logging - Every action is logged
+  4. Default search value - Pre-filled with "horses" so you just click Search
+  5. Better error display - Shows errors in red
+
+  Update GitHub with this code, then:
+  1. Open your site
+  2. Wait for the debug log to show connection test results
+  3. Click Search
+  4. Screenshot the debug log and share it with me
+
+  This will tell us exactly where it's failing.
+
+> I added screenshot horses. Nothing happens
+
+● Search(pattern: "**/screen_shots_for_claude/*horses*")
+  ⎿  Found 1 file (ctrl+o to expand)
+
+● Read(screen_shots_for_claude\horses.jpg)
+  ⎿  Read image (31KB)
+
+● The debug log shows only "Waiting for search..." - this means the JavaScript isn't running at all. The Supabase library likely isn't loading.
+
+  Let me create a simpler test version:
+
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Liaoshi Hello World - DEBUG v2</title>
+      <style>
+          body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+          .search-box { width: 70%; padding: 15px; font-size: 18px; }
+          .search-btn { padding: 15px 30px; font-size: 18px; background: #0070f3; color: white; border: none; cursor: pointer; }
+          .result { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+          .original { color: #333; font-size: 18px; }
+          .translation { color: #666; margin-top: 10px; }
+          .meta { color: #999; font-size: 14px; margin-top: 10px; }
+          #debug { background: #1a1a1a; color: #00ff00; padding: 15px; margin-top: 20px; font-family: monospace; font-size: 12px; white-space: pre-wrap; min-height: 200px; }
+      </style>
+  </head>
+  <body>
+      <h1>Liaoshi Hello World - DEBUG v2</h1>
+
+      <form id="searchForm">
+          <input type="text" id="query" class="search-box" placeholder="e.g., horses" value="horses">
+          <button type="submit" class="search-btn">Search</button>
+      </form>
+
+      <div id="results"></div>
+
+      <h3>Debug Log:</h3>
+      <div id="debug"></div>
+
+      <script>
+          // Immediate debug logging
+          var debugDiv = document.getElementById('debug');
+          function log(msg) {
+              debugDiv.innerHTML += msg + '\n';
+              console.log(msg);
+          }
+
+          log('1. JavaScript is running');
+      </script>
+
+      <!-- Load Supabase AFTER first script -->
+      <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+      <script>
+          log('2. Checking Supabase library...');
+
+          if (typeof window.supabase === 'undefined') {
+              log('ERROR: Supabase library not loaded!');
+              log('Trying alternative method...');
+          } else {
+              log('3. Supabase library loaded OK');
+          }
+
+          // Configuration - using LEGACY key for testing
+          var SUPABASE_URL = 'https://skbmyruppgthmfytofvf.supabase.co';
+          var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYm15cnVwcGd0aG1meXRvZnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc0NzY4NjYsImV4cCI6MjA1MzA1Mjg2Nn0.JhEv-y8TJzL_JCvP9M8kJBovYL8zzIYXH3kD-_bBpKk';
+
+          log('4. Creating Supabase client...');
+
+          var supabaseClient = null;
+          try {
+              supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+              log('5. Supabase client created OK');
+          } catch(e) {
+              log('ERROR creating client: ' + e.message);
+          }
+
+          // Test connection immediately
+          async function testDB() {
+              log('6. Testing database connection...');
+              try {
+                  var result = await supabaseClient.from('test01').select('*').limit(1);
+                  log('7. DB Response: ' + JSON.stringify(result));
+                  if (result.error) {
+                      log('DB ERROR: ' + result.error.message);
+                  } else if (result.data) {
+                      log('SUCCESS! Found ' + result.data.length + ' row(s)');
+                      log('Data: ' + JSON.stringify(result.data));
+                  }
+              } catch(e) {
+                  log('DB EXCEPTION: ' + e.message);
+              }
+          }
+
+          if (supabaseClient) {
+              testDB();
+          }
+
+          // Search form
+          document.getElementById('searchForm').addEventListener('submit', async function(e) {
+              e.preventDefault();
+              log('--- SEARCH CLICKED ---');
+
+              var query = document.getElementById('query').value;
+              log('Query: ' + query);
+
+              var resultsDiv = document.getElementById('results');
+              resultsDiv.innerHTML = 'Searching...';
+
+              try {
+                  var result = await supabaseClient
+                      .from('test01')
+                      .select('*')
+                      .ilike('key_words', '%' + query + '%');
+
+                  log('Search result: ' + JSON.stringify(result));
+
+                  if (result.error) {
+                      resultsDiv.innerHTML = '<p style="color:red">Error: ' + result.error.message + '</p>';
+                      return;
+                  }
+
+                  if (!result.data || result.data.length === 0) {
+                      resultsDiv.innerHTML = '<p>No results found</p>';
+                      return;
+                  }
+
+                  resultsDiv.innerHTML = '<p>Found ' + result.data.length + ' result(s):</p>';
+
+                  result.data.forEach(function(row) {
+                      resultsDiv.innerHTML += '<div class="result">' +
+                          '<div class="original">' + (row.chinese_verse || '') + '</div>' +
+                          '<div class="translation">' + (row.translated || '') + '</div>' +
+                          '<div class="meta">Chapter ' + (row.chapter_n || '') + ' | Keywords: ' + (row.key_words || '') + '</div>' +
+                          '</div>';
+                  });
+
+              } catch(e) {
+                  log('Search error: ' + e.message);
+                  resultsDiv.innerHTML = '<p style="color:red">Error: ' + e.message + '</p>';
+              }
+          });
+      </script>
+  </body>
+  </html>
