@@ -1,111 +1,28 @@
- <!DOCTYPE html>
-  <html lang="en">
+  <!DOCTYPE html>
+  <html>
   <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Liaoshi Hello World</title>
-      <style>
-          body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding:
-  20px; }
-          .search-box { width: 70%; padding: 15px; font-size: 18px; }
-          .search-btn { padding: 15px 30px; font-size: 18px; background: #0070f3; color: white;
-  border: none; cursor: pointer; }
-          .result { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
-          .original { color: #333; font-size: 18px; }
-          .translation { color: #666; margin-top: 10px; }
-          .meta { color: #999; font-size: 14px; margin-top: 10px; }
-          #debug { background: #1a1a1a; color: #00ff00; padding: 15px; margin-top: 20px;
-  font-family: monospace; font-size: 12px; white-space: pre-wrap; min-height: 150px; }
-      </style>
+      <title>Liaoshi Test</title>
   </head>
   <body>
-      <h1>Liaoshi Hello World</h1>
-
-      <form id="searchForm">
-          <input type="text" id="query" class="search-box" placeholder="e.g., horses, capital,
-  Abaoji" value="horses">
-          <button type="submit" class="search-btn">Search</button>
-      </form>
-
-      <div id="results"></div>
-
-      <h3>Debug Log:</h3>
-      <div id="debug"></div>
-
-      <script>
-          var debugDiv = document.getElementById('debug');
-          function log(msg) {
-              debugDiv.innerHTML += msg + '\n';
-          }
-          log('Page loaded...');
-      </script>
+      <h1>Liaoshi Test</h1>
+      <button onclick="testSearch()">Click to Test</button>
+      <div id="output">Waiting...</div>
 
       <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
       <script>
-          // Configuration
-          var SUPABASE_URL = 'https://skbmyruppgthmfytofvf.supabase.co';
-          var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
-  nJlZiI6InNrYm15cnVwcGd0aG1meXRvZnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MDc1MjMsImV4cCI6MjA4NDM4
-  MzUyM30.nHpeBFlXBfLY3K2jbNN_UX5h9J3IbXk7BsFhxct4xo0';
+          var url = 'https://skbmyruppgthmfytofvf.supabase.co';
+          var key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYm1
+  5cnVwcGd0aG1meXRvZnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MDc1MjMsImV4cCI6MjA4NDM4MzUyM30.nHpeBF
+  lXBfLY3K2jbNN_UX5h9J3IbXk7BsFhxct4xo0';
 
-          var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-          log('Supabase client ready');
+          var client = window.supabase.createClient(url, key);
+          document.getElementById('output').innerHTML = 'Client ready. Click button.';
 
-          // Test connection
-          async function testConnection() {
-              log('Testing connection...');
-              var result = await supabaseClient.from('test01').select('*').limit(1);
-              if (result.error) {
-                  log('ERROR: ' + result.error.message);
-              } else {
-                  log('Connected! Found ' + result.data.length + ' row(s)');
-              }
+          async function testSearch() {
+              document.getElementById('output').innerHTML = 'Searching...';
+              var result = await client.from('test01').select('*');
+              document.getElementById('output').innerHTML = JSON.stringify(result, null, 2);
           }
-          testConnection();
-
-          // Search
-          document.getElementById('searchForm').addEventListener('submit', async function(e) {
-              e.preventDefault();
-              var query = document.getElementById('query').value;
-              var resultsDiv = document.getElementById('results');
-
-              log('Searching: ' + query);
-              resultsDiv.innerHTML = 'Searching...';
-
-              var result = await supabaseClient
-                  .from('test01')
-                  .select('*')
-                  .ilike('key_words', '%' + query + '%');
-
-              if (result.error) {
-                  log('Error: ' + result.error.message);
-                  resultsDiv.innerHTML = '<p style="color:red">Error: ' + result.error.message +
-  '</p>';
-                  return;
-              }
-
-              if (!result.data || result.data.length === 0) {
-                  log('No results');
-                  resultsDiv.innerHTML = '<p>No results found. Try: horses, tribute, Abaoji,
-  capital</p>';
-                  return;
-              }
-
-              log('Found ' + result.data.length + ' results');
-              resultsDiv.innerHTML = '<p><strong>Found ' + result.data.length + '
-  result(s):</strong></p>';
-
-              result.data.forEach(function(row) {
-                  resultsDiv.innerHTML +=
-                      '<div class="result">' +
-                      '<div class="original">' + (row.chinese_verse || '') + '</div>' +
-                      '<div class="translation">' + (row.translated || '') + '</div>' +
-                      '<div class="meta">Chapter ' + (row.chapter_n || '') + ' | Keywords: ' +
-  (row.key_words || '') + '</div>' +
-                      '</div>';
-              });
-          });
       </script>
   </body>
   </html>
