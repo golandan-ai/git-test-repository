@@ -1,59 +1,46 @@
-  <!DOCTYPE html>
-  <html>
-  <head>
-      <title>Basic Test v3</title>
-  </head>
-  <body>
-      <h1>Basic Test v3</h1>
-      <pre id="output">Loading...</pre>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Liaoshi Test</title>
+</head>
+<body>
+    <h1>Liaoshi Test</h1>
+    <pre id="output">Starting...</pre>
 
-      <script>
-          function log(msg) {
-              document.getElementById('output').innerHTML += '\n' + msg;
-          }
-          log('Step 1: JavaScript works');
-      </script>
+    <script>
+        function log(msg) {
+            document.getElementById('output').innerHTML += '\n' + msg;
+        }
+        log('Step 1: JS works');
+    </script>
 
-      <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-      <script>
-          log('Step 2: Script running');
+    <script>
+        log('Step 2: After supabase tag');
 
-          // Check what Supabase exposes
-          log('window.supabase = ' + typeof window.supabase);
-          log('window.Supabase = ' + typeof window.Supabase);
-          log('window.createClient = ' + typeof window.createClient);
+        if (typeof supabase !== 'undefined') {
+            log('Step 3: supabase exists');
 
-          // Try different ways to access it
-          var sb = window.supabase || window.Supabase;
+            var url = "https://skbmyruppgthmfytofvf.supabase.co";
+            var key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYm15cnVwcGd0aG1meXRvZnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MDc1MjMsImV4cCI6MjA4NDM4MzUyM30.nHpeBFlXBfLY3K2jbNN_UX5h9J3IbXk7BsFhxct4xo0";
 
-          if (sb && sb.createClient) {
-              log('Step 3: Found createClient');
+            var client = supabase.createClient(url, key);
+            log('Step 4: Client created');
 
-              var client = sb.createClient(
-                  'https://skbmyruppgthmfytofvf.supabase.co',
-                  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYm15c
-  nVwcGd0aG1meXRvZnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MDc1MjMsImV4cCI6MjA4NDM4MzUyM30.nHpeBFlX
-  BfLY3K2jbNN_UX5h9J3IbXk7BsFhxct4xo0'
-              );
-              log('Step 4: Client created');
-
-              client.from('test01').select('*').then(function(res) {
-                  if (res.error) {
-                      log('DB Error: ' + res.error.message);
-                  } else {
-                      log('SUCCESS! Found ' + res.data.length + ' rows:');
-                      res.data.forEach(function(row) {
-                          log('- ' + row.translated);
-                      });
-                  }
-              });
-          } else {
-              log('FAILED: No createClient found');
-              log('Available on window: ' + Object.keys(window).filter(function(k) {
-                  return k.toLowerCase().indexOf('supa') > -1;
-              }));
-          }
-      </script>
-  </body>
-  </html>
+            client.from('test01').select('*').then(function(res) {
+                if (res.error) {
+                    log('Error: ' + res.error.message);
+                } else {
+                    log('SUCCESS! Found ' + res.data.length + ' rows:');
+                    res.data.forEach(function(row) {
+                        log('- ' + row.translated);
+                    });
+                }
+            });
+        } else {
+            log('FAILED: supabase not found');
+        }
+    </script>
+</body>
+</html>
